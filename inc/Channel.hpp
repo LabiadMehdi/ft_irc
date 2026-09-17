@@ -2,8 +2,7 @@
 #define CHANNEL_HPP
 
 #include <string>
-#include <map>
-#include <vector>
+#include <set>
 
 class Client;
 

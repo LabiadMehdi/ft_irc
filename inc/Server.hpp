@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <poll.h>
+#include "Message.hpp"
 
 class Client;
 class Channel;
@@ -18,6 +19,20 @@ class Server
 		std::map<std::string, Channel*>	_channels;
 		std::vector<struct pollfd>		_pollfds;
 		int								_listening_fd;
+		
+		Server(const Server &other);
+		Server	&operator=(const Server &other);
+		
+		void	acceptClient();
+		void	readFromClient(int fd);
+		void	removeClient(int fd);
+		void	handleMessage(Client *c, const Message &msg);
+	public:
+		Server(int port, const std::string &password);
+		~Server();
+
+		void	setup();
+		void	run();
 };
 
 #endif
