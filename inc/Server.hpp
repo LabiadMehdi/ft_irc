@@ -7,7 +7,8 @@
 #include <poll.h>
 #include "Message.hpp"
 
-class Client;
+#include "Client.hpp"
+
 class Channel;
 
 class Server

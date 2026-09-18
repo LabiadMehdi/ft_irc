@@ -14,6 +14,9 @@ class Client
 		std::string	_hostname;
 		bool		_registered;
 		bool		_pwd_accepted;
+	public:
+		Client(int fd, const std::string &host);
+		int				getFd() const;
 };
 
 #endif
