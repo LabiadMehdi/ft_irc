@@ -17,6 +17,7 @@ class Client
 	public:
 		Client(int fd, const std::string &host);
 		int				getFd() const;
+		std::string 	&getInBuf();
 };
 
 #endif

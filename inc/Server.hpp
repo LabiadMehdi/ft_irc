@@ -7,8 +7,7 @@
 #include <poll.h>
 #include "Message.hpp"
 
-#include "Client.hpp"
-
+class Client;
 class Channel;
 
 class Server
@@ -19,6 +18,7 @@ class Server
 		std::map<int, Client*>			_clients;
 		std::map<std::string, Channel*>	_channels;
 		std::vector<struct pollfd>		_pollfds;
+		std::vector<int>				_toRemove;
 		int								_listening_fd;
 		
 		Server(const Server &other);
@@ -28,6 +28,8 @@ class Server
 		void	readFromClient(int fd);
 		void	removeClient(int fd);
 		void	handleMessage(Client *c, const Message &msg);
+		void	markForRemoval(int fd);
+		void	cleanupClients();
 	public:
 		Server(int port, const std::string &password);
 		~Server();

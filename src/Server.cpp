@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <iostream>
 #include <arpa/inet.h>
+#include "Client.hpp"
+#include "Reader.hpp"
 
 Server::Server(int port, const std::string &password) : _port(port), _password(password), _listening_fd(-1)
 {
@@ -45,6 +47,57 @@ Server::~Server()
 		close(_listening_fd);
 }
 
+void Server::markForRemoval(int fd)
+{
+    _toRemove.push_back(fd);
+}
+
+void Server::removeClient(int fd)
+{
+	for (size_t i = 0; i < _pollfds.size(); i++)
+	{
+		if (_pollfds[i].fd == fd)
+		{
+			_pollfds.erase(_pollfds.begin() + i);
+			break;
+		}
+	}
+
+	std::map<int, Client*>::iterator it = _clients.find(fd);
+	if (it != _clients.end())
+	{
+		delete it->second;
+		_clients.erase(it);
+	}
+
+	close(fd);
+
+	std::cerr << "client disconnected on fd " << fd << std::endl;
+}
+
+void Server::cleanupClients()
+{
+	for (size_t i = 0; i < _toRemove.size(); i++)
+		removeClient(_toRemove[i]);
+	_toRemove.clear();
+}
+
+void	Server::readFromClient(int fd)
+{
+	char buf[512];
+	ssize_t n = recv(fd, buf, sizeof(buf), 0);
+	
+	if (n <= 0)
+	{
+		markForRemoval(fd);
+		return ;
+	}
+	std::string chunk(buf, n);
+	Client *client = _clients[fd];
+	feed(client->getInBuf(), chunk);
+	std::cerr << "fd " << fd << " sent " << n << " bytes" << std::endl;
+}
+
 void	Server::run()
 {
 	while (true)
@@ -54,6 +107,15 @@ void	Server::run()
 		
 		if (_pollfds[0].revents & POLLIN)
 			acceptClient();
+
+		for (size_t i = 1; i < _pollfds.size(); i++)
+		{
+			if (_pollfds[i].revents & POLLIN)
+			{
+				readFromClient(_pollfds[i].fd);
+			}
+		}
+		cleanupClients();
 	}
 }
 
@@ -81,3 +143,4 @@ void	Server::acceptClient()
 
 	std::cerr << "client connected on fd " << fd << std::endl;
 }
+

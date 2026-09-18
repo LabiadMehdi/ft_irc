@@ -14,5 +14,6 @@ void	feed(std::string &buffer, const std::string &chunk)
 		std::string line = buffer.substr(0, end);
 		buffer.erase(0, nl + 1);
 		struct Message msg = parseMessage(line);
+		std::cerr << "command: [" << msg.command << "] params: " << msg.params.size() << std::endl;
 	}
 }

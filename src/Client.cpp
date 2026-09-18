@@ -8,3 +8,8 @@ int	Client::getFd() const
 {
 	return _fd;
 }
+
+std::string &Client::getInBuf()
+{
+    return _in_buf;
+}
