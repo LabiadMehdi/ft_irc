@@ -5,6 +5,6 @@
 #include <iostream>
 #include "Message.hpp"
 
-void	feed(std::string &buffer, const std::string &chunk);
+std::vector<Message>	feed(std::string &buffer, const std::string &chunk);
 
 #endif

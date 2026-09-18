@@ -1,8 +1,9 @@
 #include "Reader.hpp"
 
-void	feed(std::string &buffer, const std::string &chunk)
+std::vector<Message>	feed(std::string &buffer, const std::string &chunk)
 {
-	buffer = buffer + chunk;
+	std::vector<Message> out;
+	buffer += chunk;
 	while (true)
 	{
 		size_t nl = buffer.find('\n');
@@ -13,7 +14,7 @@ void	feed(std::string &buffer, const std::string &chunk)
 			end--;
 		std::string line = buffer.substr(0, end);
 		buffer.erase(0, nl + 1);
-		struct Message msg = parseMessage(line);
-		std::cerr << "command: [" << msg.command << "] params: " << msg.params.size() << std::endl;
+		out.push_back(parseMessage(line));
 	}
+	return out;
 }

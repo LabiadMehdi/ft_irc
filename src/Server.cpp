@@ -94,8 +94,9 @@ void	Server::readFromClient(int fd)
 	}
 	std::string chunk(buf, n);
 	Client *client = _clients[fd];
-	feed(client->getInBuf(), chunk);
-	std::cerr << "fd " << fd << " sent " << n << " bytes" << std::endl;
+	std::vector<Message> msgs = feed(client->getInBuf(), chunk);
+	for (size_t i = 0; i < msgs.size(); i++)
+		handleMessage(client, msgs[i]);
 }
 
 void	Server::run()
