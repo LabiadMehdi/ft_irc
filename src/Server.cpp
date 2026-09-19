@@ -84,7 +84,7 @@ void Server::cleanupClients()
 	_toRemove.clear();
 }
 
-void Server::sendNumeric(Client *client, int code, const std::string &text)
+void Server::sendNumeric(Client *client, int code, const std::string &params, const std::string &text)
 {
 	std::string str = ":ircserv ";
 	std::ostringstream oss;
@@ -93,10 +93,11 @@ void Server::sendNumeric(Client *client, int code, const std::string &text)
 	str += codeStr;
 	str += ' ';
 	if (client->getNick().size() == 0)
-		str += '*';
+		str += "* ";
 	else
 		str += client->getNick();
-	str += " :";
+	if (params.size() == 0)
+		str += ":";
 	str += text;
 	sendTo(client, str);
 }

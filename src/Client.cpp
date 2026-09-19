@@ -14,7 +14,27 @@ std::string &Client::getInBuf()
     return _in_buf;
 }
 
-std::string Client::getNick()
+std::string Client::getNick() const
 {
     return _nick;
+}
+
+bool	Client::isRegistered() const
+{
+	return _registered;
+}
+
+bool	Client::isPwdAccepted() const
+{
+	return _pwd_accepted;
+}
+
+void	Client::setPwdAccepted(bool b)
+{
+	_pwd_accepted = b;
+}
+
+void	Client::setNick(const std::string nick)
+{
+	_nick = nick;
 }

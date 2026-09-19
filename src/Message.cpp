@@ -1,13 +1,6 @@
 #include "Message.hpp"
 #include <cctype>
-
-static std::string toUpper(const std::string &s)
-{
-	std::string out = s;
-	for (size_t i = 0; i < out.size(); i++)
-		out[i] = std::toupper(static_cast<unsigned char>(out[i]));
-	return out;
-}
+#include "Utils.hpp"
 
 std::string	nextToken(const std::string &str, size_t &pos)
 {

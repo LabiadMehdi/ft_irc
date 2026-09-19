@@ -31,7 +31,8 @@ class Server
 		void	markForRemoval(int fd);
 		void	cleanupClients();
 		void	sendTo(Client *client, const std::string &msg);
-		void 	sendNumeric(Client *client, int code, const std::string &text);
+		void 	sendNumeric(Client *client, int code, const std::string &param, const std::string &text);
+		Client *findByNick(const std::string &nick);
 
 		void	handlePass(Client *client, const Message &msg);
 		void	handleNick(Client *client, const Message &msg);

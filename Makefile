@@ -6,7 +6,7 @@ SRCDIR   = src
 OBJDIR   = obj
 
 SRCS     = main.cpp Server.cpp Client.cpp Channel.cpp Commands.cpp \
-           Message.cpp Reader.cpp
+           Message.cpp Reader.cpp Utils.cpp
 OBJS     = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 HEADERS  = $(wildcard inc/*.hpp)
 

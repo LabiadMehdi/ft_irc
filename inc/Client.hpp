@@ -18,7 +18,11 @@ class Client
 		Client(int fd, const std::string &host);
 		int				getFd() const;
 		std::string 	&getInBuf();
-		std::string		getNick();
+		std::string		getNick() const;
+		bool			isRegistered() const;
+		bool			isPwdAccepted() const;
+		void			setPwdAccepted(bool b);
+		void			setNick(const std::string nick);
 };
 
 #endif
