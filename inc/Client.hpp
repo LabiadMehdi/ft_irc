@@ -19,10 +19,13 @@ class Client
 		int				getFd() const;
 		std::string 	&getInBuf();
 		std::string		getNick() const;
+		std::string		getUsername() const;
 		bool			isRegistered() const;
 		bool			isPwdAccepted() const;
 		void			setPwdAccepted(bool b);
+		void			setRegistered(bool b);
 		void			setNick(const std::string nick);
+		void			setUsername(const std::string username);
 };
 
 #endif

@@ -84,6 +84,17 @@ void Server::cleanupClients()
 	_toRemove.clear();
 }
 
+void Server::sendNumeric(Client *client, int code, const std::string &text)
+{
+	sendNumeric(client, code, "", text);
+}
+
+void Server::sendTo(Client *client, const std::string &msg)
+{
+	std::string line = msg + "\r\n";
+	send(client->getFd(), line.c_str(), line.size(), 0);
+}
+
 void Server::sendNumeric(Client *client, int code, const std::string &params, const std::string &text)
 {
 	std::string str = ":ircserv ";
@@ -92,20 +103,15 @@ void Server::sendNumeric(Client *client, int code, const std::string &params, co
 	std::string codeStr = oss.str();
 	str += codeStr;
 	str += ' ';
-	if (client->getNick().size() == 0)
-		str += "* ";
-	else
-		str += client->getNick();
-	if (params.size() == 0)
-		str += ":";
+	str += (client->getNick().empty() ? "*" : client->getNick());
+	if (!params.empty())
+	{
+		str += " ";
+		str += params;
+	}
+	str += " :";
 	str += text;
 	sendTo(client, str);
-}
-
-void Server::sendTo(Client *client, const std::string &msg)
-{
-	std::string line = msg + "\r\n";
-	send(client->getFd(), line.c_str(), line.size(), 0);
 }
 
 void	Server::readFromClient(int fd)

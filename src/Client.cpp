@@ -38,3 +38,18 @@ void	Client::setNick(const std::string nick)
 {
 	_nick = nick;
 }
+
+void	Client::setUsername(const std::string username)
+{
+	_username = username;
+}
+
+void	Client::setRegistered(bool b)
+{
+	_registered = b;
+}
+
+std::string		Client::getUsername() const
+{
+	return _username;
+}

@@ -3,24 +3,39 @@
 #include "Utils.hpp"
 #include <cctype>
 
+void Server::checkRegistration(Client *client)
+{
+	if (client->isRegistered())
+		return ;
+	if (!client->isPwdAccepted())
+		return ;
+	if (client->getNick().empty())
+		return ;
+	if (client->getUsername().empty())
+		return ;
+	client->setRegistered(true);
+	sendNumeric(client, 1,"Welcome to the ft_irc Network " + client->getNick());
+}
+
 void Server::handlePass(Client *client, const Message &msg)
 {
 	if (client->isRegistered())
 	{
-		sendNumeric(client, 462, msg.params[0], "You may not register");
+		sendNumeric(client, 462,"You may not register");
 		return ;
 	}
 	if (msg.params.size() < 1)
 	{
-		sendNumeric(client, 461, msg.params[0], "PASS :Not enough parameters");
+		sendNumeric(client, 461,"PASS :Not enough parameters");
 		return ;
 	}
 	if (msg.params[0] != _password)
 	{
-		sendNumeric(client, 464, msg.params[0], "Password incorrect");
+		sendNumeric(client, 464,"Password incorrect");
 		return ;
 	}
 	client->setPwdAccepted(true);
+	checkRegistration(client);
 }
 
 Client *Server::findByNick(const std::string &nick)
@@ -53,27 +68,38 @@ void Server::handleNick(Client *client, const Message &msg)
 {
 	if (msg.params.size() < 1)
 	{
-		sendNumeric(client, 431, msg.params[0], "No nickname given");
+		sendNumeric(client, 431,"No nickname given");
 		return ;
 	}
 	if (!isValidNick(msg.params[0]))
 	{
-		sendNumeric(client, 432, msg.params[0], msg.params[0] + " :Erroneous nickname");
+		sendNumeric(client, 432, msg.params[0], "Erroneous nickname");
 		return ;
 	}
 	Client	*existing = findByNick(msg.params[0]);
 	if (existing && existing != client)
 	{
-		sendNumeric(client, 433, msg.params[0], msg.params[0] + " :Nickname is already in use");
+		sendNumeric(client, 433, msg.params[0], "Nickname is already in use");
 		return ;
 	}
 	client->setNick(msg.params[0]);
+	checkRegistration(client);
 }
 
 void Server::handleUser(Client *client, const Message &msg)
 {
-    (void)client;
-    (void)msg;    
+	if (client->isRegistered())
+	{
+		sendNumeric(client, 462,"You may not register");
+		return ;
+	}
+	if (msg.params.size() < 4)
+	{
+		sendNumeric(client, 461,"USER :Not enough parameters");
+		return ;
+	}
+	client->setUsername(msg.params[0]);
+	checkRegistration(client);
 }
 
 void Server::handleMessage(Client *client, const Message &msg)
