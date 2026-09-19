@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include "Client.hpp"
 #include "Reader.hpp"
+#include <iomanip>
+#include <sstream>
 
 Server::Server(int port, const std::string &password) : _port(port), _password(password), _listening_fd(-1)
 {
@@ -82,6 +84,29 @@ void Server::cleanupClients()
 	_toRemove.clear();
 }
 
+void Server::sendNumeric(Client *client, int code, const std::string &text)
+{
+	std::string str = ":ircserv ";
+	std::ostringstream oss;
+	oss << std::setw(3) << std::setfill('0') << code;
+	std::string codeStr = oss.str();
+	str += codeStr;
+	str += ' ';
+	if (client->getNick().size() == 0)
+		str += '*';
+	else
+		str += client->getNick();
+	str += " :";
+	str += text;
+	sendTo(client, str);
+}
+
+void Server::sendTo(Client *client, const std::string &msg)
+{
+	std::string line = msg + "\r\n";
+	send(client->getFd(), line.c_str(), line.size(), 0);
+}
+
 void	Server::readFromClient(int fd)
 {
 	char buf[512];
@@ -144,4 +169,3 @@ void	Server::acceptClient()
 
 	std::cerr << "client connected on fd " << fd << std::endl;
 }
-

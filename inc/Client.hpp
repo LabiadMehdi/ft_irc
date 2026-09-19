@@ -18,6 +18,7 @@ class Client
 		Client(int fd, const std::string &host);
 		int				getFd() const;
 		std::string 	&getInBuf();
+		std::string		getNick();
 };
 
 #endif

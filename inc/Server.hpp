@@ -27,9 +27,16 @@ class Server
 		void	acceptClient();
 		void	readFromClient(int fd);
 		void	removeClient(int fd);
-		void	handleMessage(Client *c, const Message &msg);
+		void	handleMessage(Client *client, const Message &msg);
 		void	markForRemoval(int fd);
 		void	cleanupClients();
+		void	sendTo(Client *client, const std::string &msg);
+		void 	sendNumeric(Client *client, int code, const std::string &text);
+
+		void	handlePass(Client *client, const Message &msg);
+		void	handleNick(Client *client, const Message &msg);
+		void	handleUser(Client *client, const Message &msg);
+
 	public:
 		Server(int port, const std::string &password);
 		~Server();

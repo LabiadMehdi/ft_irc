@@ -1,4 +1,13 @@
 #include "Message.hpp"
+#include <cctype>
+
+static std::string toUpper(const std::string &s)
+{
+	std::string out = s;
+	for (size_t i = 0; i < out.size(); i++)
+		out[i] = std::toupper(static_cast<unsigned char>(out[i]));
+	return out;
+}
 
 std::string	nextToken(const std::string &str, size_t &pos)
 {
@@ -33,7 +42,7 @@ struct Message	parseMessage(const std::string &str)
 	if (pos < str.size() && str[0] == ':')
 		msg.prefix = nextToken(str, ++pos);
 
-	msg.command = nextToken(str, pos);
+	msg.command = toUpper(nextToken(str, pos));
 
 	while (pos < str.size())
 	{

@@ -13,3 +13,8 @@ std::string &Client::getInBuf()
 {
     return _in_buf;
 }
+
+std::string Client::getNick()
+{
+    return _nick;
+}
