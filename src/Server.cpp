@@ -11,6 +11,7 @@
 #include "Reader.hpp"
 #include <iomanip>
 #include <sstream>
+#include "Channel.hpp"
 
 Server::Server(int port, const std::string &password) : _port(port), _password(password), _listening_fd(-1)
 {
@@ -54,6 +55,18 @@ void Server::markForRemoval(int fd)
     _toRemove.push_back(fd);
 }
 
+void Server::removeFromAllChannels(Client *client)
+{
+    std::map<std::string, Channel*>::iterator it = _channels.begin();
+    while (it != _channels.end())
+    {
+        Channel *chan = it->second;
+        chan->removeMember(client);
+        chan->removeOperator(client);
+        ++it;
+    }
+}
+
 void Server::removeClient(int fd)
 {
 	for (size_t i = 0; i < _pollfds.size(); i++)
@@ -68,6 +81,7 @@ void Server::removeClient(int fd)
 	std::map<int, Client*>::iterator it = _clients.find(fd);
 	if (it != _clients.end())
 	{
+		removeFromAllChannels(it->second);
 		delete it->second;
 		_clients.erase(it);
 	}
@@ -129,6 +143,16 @@ void	Server::readFromClient(int fd)
 	std::vector<Message> msgs = feed(client->getInBuf(), chunk);
 	for (size_t i = 0; i < msgs.size(); i++)
 		handleMessage(client, msgs[i]);
+}
+
+void 	Server::broadcast(Channel *chan, const std::string &msg, Client *except)
+{
+	std::set<Client*>::const_iterator it;
+	for (it = chan->getMembers().begin(); it != chan->getMembers().end(); ++it)
+	{
+		if (*it != except)
+			sendTo(*it, msg);
+	}
 }
 
 void	Server::run()

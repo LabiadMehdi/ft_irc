@@ -16,16 +16,17 @@ class Client
 		bool		_pwd_accepted;
 	public:
 		Client(int fd, const std::string &host);
-		int				getFd() const;
-		std::string 	&getInBuf();
-		std::string		getNick() const;
-		std::string		getUsername() const;
-		bool			isRegistered() const;
-		bool			isPwdAccepted() const;
-		void			setPwdAccepted(bool b);
-		void			setRegistered(bool b);
-		void			setNick(const std::string nick);
-		void			setUsername(const std::string username);
+		int					getFd() const;
+		std::string 		&getInBuf();
+		const std::string	&getNick() const;
+		const std::string	&getUsername() const;
+		std::string 		getPrefix() const;
+		bool				isRegistered() const;
+		bool				isPwdAccepted() const;
+		void				setPwdAccepted(bool b);
+		void				setRegistered(bool b);
+		void				setNick(const std::string &nick);
+		void				setUsername(const std::string username);
 };
 
 #endif

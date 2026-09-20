@@ -26,6 +26,7 @@ class Server
 		
 		void	acceptClient();
 		void	readFromClient(int fd);
+		void	removeFromAllChannels(Client *client);
 		void	removeClient(int fd);
 		void	handleMessage(Client *client, const Message &msg);
 		void	markForRemoval(int fd);
@@ -39,7 +40,10 @@ class Server
 		void	handlePass(Client *client, const Message &msg);
 		void	handleNick(Client *client, const Message &msg);
 		void	handleUser(Client *client, const Message &msg);
-
+		Channel *findChannel(const std::string &name);
+		void 	broadcast(Channel *chan, const std::string &msg, Client *except);
+		void 	handleJoin(Client *client, const Message &msg);
+		void	handlePrivmsg(Client *client, const Message &msg);
 	public:
 		Server(int port, const std::string &password);
 		~Server();

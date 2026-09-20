@@ -2,6 +2,7 @@
 #include "Client.hpp"
 #include "Utils.hpp"
 #include <cctype>
+#include "Channel.hpp"
 
 void Server::checkRegistration(Client *client)
 {
@@ -102,6 +103,129 @@ void Server::handleUser(Client *client, const Message &msg)
 	checkRegistration(client);
 }
 
+static bool	isValidChannelName(const std::string &name)
+{
+	if (name.empty())
+		return false;
+	if (name[0] != '#')
+		return false;
+	if (name.find(' ') != std::string::npos || name.find(',') != std::string::npos || name.find(':') != std::string::npos )
+		return false;
+	return true;
+}
+
+Channel *Server::findChannel(const std::string &name)
+{
+	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	if (it  == _channels.end())
+		return NULL;
+	return it->second;
+}
+
+void Server::handleJoin(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 1)
+	{
+		sendNumeric(client, 461, "JOIN", "Not enough parameters");
+		return ;
+	}
+	if (!isValidChannelName(msg.params[0]))
+	{
+		sendNumeric(client, 403, msg.params[0], "No such channel");
+		return ;
+	}
+	std::string name = msg.params[0];
+	Channel *chan = findChannel(name);
+	if (!chan)
+	{
+		chan = new Channel(name);
+		_channels[name] = chan;
+		chan->addOperator(client);
+	}
+	else
+	{
+		if (chan->isMember(client))
+			return ;
+		if (chan->isInviteOnly() && !chan->isInvited(client->getNick()))
+		{
+			sendNumeric(client, 473, name, "Cannot join channel (+i)");
+			return ;
+		}
+		if (chan->hasKey())
+		{
+			std::string given;
+			if (msg.params.size() > 1)
+				given = msg.params[1];
+			else
+				given = "";
+			if (given != chan->getKey())
+			{
+				sendNumeric(client, 475, name, "Cannot join channel (+k)");
+				return ;
+			}
+		}
+		if (chan->hasLimit() && chan->getMembers().size() >= (size_t)chan->getLimit())
+		{
+			sendNumeric(client, 471, name, "Cannot join channel (+l)");
+			return ;
+		}
+	}
+	chan->addMember(client);
+	broadcast(chan, ":" + client->getPrefix() + " JOIN " + name, NULL);
+}
+
+void Server::handlePrivmsg(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 1)
+	{
+		sendNumeric(client, 411, "No recipient given (PRIVMSG)");
+		return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendNumeric(client, 412, "No text to send");
+		return ;
+	}
+	std::string target = msg.params[0];
+	std::string text = msg.params[1];
+	std::string line = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + text;
+	if (target[0] == '#')
+	{
+		Channel *chan = findChannel(target);
+		if (!chan)
+		{
+			sendNumeric(client, 403, msg.params[0], "No such channel");
+			return ;
+		}
+		if (!chan->isMember(client))
+		{
+			sendNumeric(client, 404, target, "Cannot send to channel");
+			return ;
+		}
+		broadcast(chan, ":" + client->getPrefix() + " PRIVMSG " + msg.params[0] + " :" + text, client);
+	}
+	else
+	{
+		Client *dest = findByNick(target);
+		if (!dest)
+		{
+			sendNumeric(client, 401, msg.params[0], "No such nickname");
+			return ;
+		}
+		sendTo(dest, line);
+	}
+}
+
 void Server::handleMessage(Client *client, const Message &msg)
 {
 	if (msg.command == "PASS")
@@ -110,6 +234,10 @@ void Server::handleMessage(Client *client, const Message &msg)
         handleNick(client, msg);
     else if (msg.command == "USER")
         handleUser(client, msg);
+	else if (msg.command == "JOIN")
+		handleJoin(client, msg);
+	else if (msg.command == "PRIVMSG")
+		handlePrivmsg(client, msg);
     else
         sendTo(client,  "unknown command: " + msg.command);
 }

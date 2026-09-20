@@ -14,7 +14,7 @@ std::string &Client::getInBuf()
     return _in_buf;
 }
 
-std::string Client::getNick() const
+const std::string &Client::getNick() const
 {
     return _nick;
 }
@@ -34,7 +34,7 @@ void	Client::setPwdAccepted(bool b)
 	_pwd_accepted = b;
 }
 
-void	Client::setNick(const std::string nick)
+void	Client::setNick(const std::string &nick)
 {
 	_nick = nick;
 }
@@ -49,7 +49,12 @@ void	Client::setRegistered(bool b)
 	_registered = b;
 }
 
-std::string		Client::getUsername() const
+const std::string	&Client::getUsername() const
 {
 	return _username;
+}
+
+std::string Client::getPrefix() const
+{
+	return _nick + "!~" + _username + '@' + _hostname;
 }

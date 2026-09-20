@@ -19,6 +19,31 @@ class Channel
 		std::string				_key;
 		int						_user_limit;
 		bool					_has_limit;
+	public:
+		Channel(const std::string &name);
+		
+		const std::string &getName() const;
+		const std::string &getTopic() const;
+		void setTopic(const std::string &topic);
+
+		void addMember(Client *c);
+		void removeMember(Client *c);
+		bool isMember(Client *c) const;
+		bool isEmpty() const;
+
+		void addOperator(Client *c);
+		void removeOperator(Client *c);
+		bool isOperator(Client *c) const;
+
+		bool isInviteOnly() const;
+		bool isInvited(const std::string &name) const;
+		bool hasKey() const;
+		bool hasLimit() const;
+		const std::string &getKey() const;
+		int getLimit() const;
+
+
+		const std::set<Client*> &getMembers() const;
 };
 
 #endif
