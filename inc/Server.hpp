@@ -44,6 +44,8 @@ class Server
 		void 	broadcast(Channel *chan, const std::string &msg, Client *except);
 		void 	handleJoin(Client *client, const Message &msg);
 		void	handlePrivmsg(Client *client, const Message &msg);
+		void	handlePart(Client *client, const Message &msg);
+		void 	handleQuit(Client *client, const Message &msg);
 	public:
 		Server(int port, const std::string &password);
 		~Server();

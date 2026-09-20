@@ -226,6 +226,54 @@ void Server::handlePrivmsg(Client *client, const Message &msg)
 	}
 }
 
+void Server::handlePart(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 1)
+	{
+		sendNumeric(client, 461,"PART", "Not enough parameters");
+		return ;
+	}
+	std::string name = msg.params[0];
+	Channel *chan = findChannel(name);
+	if (!chan)
+	{
+		sendNumeric(client, 403, name, "No such channel");
+		return ;
+	}
+	if (!chan->isMember(client))
+	{
+		sendNumeric(client, 442, name, "You're not on that channel");
+		return ;
+	}
+	std::string reason = (msg.params.size() > 1) ? msg.params[1] : client->getNick();
+	broadcast(chan, ":" + client->getPrefix() + " PART " + name + " :" + reason, NULL);
+	chan->removeMember(client);
+	chan->removeOperator(client);
+	if (chan->isEmpty())
+	{
+		_channels.erase(name);
+		delete chan;
+	}
+}
+
+void Server::handleQuit(Client *client, const Message &msg)
+{
+	std::string reason = (msg.params.size() > 0) ? msg.params[0] : "Client quit";
+	std::string line = ":" + client->getPrefix() + " QUIT :" + reason;
+	std::map<std::string, Channel*>::iterator it;
+	for (it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		if (it->second->isMember(client))
+			broadcast(it->second, line, client);
+	}
+	markForRemoval(client->getFd());
+}
+
 void Server::handleMessage(Client *client, const Message &msg)
 {
 	if (msg.command == "PASS")
@@ -238,6 +286,10 @@ void Server::handleMessage(Client *client, const Message &msg)
 		handleJoin(client, msg);
 	else if (msg.command == "PRIVMSG")
 		handlePrivmsg(client, msg);
+	else if (msg.command == "PART")
+		handlePart(client, msg);
+	else if (msg.command == "QUIT")
+		handleQuit(client, msg);
     else
         sendTo(client,  "unknown command: " + msg.command);
 }
