@@ -274,9 +274,162 @@ void Server::handleQuit(Client *client, const Message &msg)
 	markForRemoval(client->getFd());
 }
 
+void Server::handlePing(Client *client, const Message &msg)
+{
+	std::string token = (msg.params.size() > 0) ? msg.params[0] : "";
+	sendTo(client, ":ircserv PONG ircserv :" + token);
+}
+
+void Server::handlePong(Client *client, const Message &msg)
+{
+	(void)client;
+	(void)msg;
+}
+
+void Server::handleKick(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendNumeric(client, 461,"KICK", "Not enough parameters");
+		return ;
+	}
+	std::string name = msg.params[0];
+	Channel *chan = findChannel(name);
+	if (!chan)
+	{
+    	sendNumeric(client, 403, name, "No such channel");
+    	return;
+	}
+	if (!chan->isMember(client))
+	{
+		sendNumeric(client, 442, name, "You're not on that channel");
+		return ;
+	}
+	if (!chan->isOperator(client))
+	{
+		sendNumeric(client, 482, name, "You're not channel operator");
+		return ;
+	}
+	Client *toKick = findByNick(msg.params[1]);
+	if (!toKick || !chan->isMember(toKick))
+	{
+		sendNumeric(client, 441, msg.params[1] + " " + name, "They aren't on that channel");
+    	return;
+	}
+	std::string reason = (msg.params.size() > 2) ? msg.params[2] : client->getNick();
+	std::string line = ":" + client->getPrefix() + " KICK " + name + " " + msg.params[1] + " :" + reason;
+	broadcast(chan, line, NULL);
+	chan->removeMember(toKick);
+	chan->removeOperator(toKick);
+	if (chan->isEmpty())
+	{
+		_channels.erase(name);
+		delete chan;
+	}
+}
+
+void Server::handleInvite(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendNumeric(client, 461,"INVITE", "Not enough parameters");
+		return ;
+	}
+	Client *target = findByNick(msg.params[0]);
+	if (!target)
+	{
+		sendNumeric(client, 401, msg.params[0], "No such nick/channel");
+		return ;
+	}
+	Channel *chan = findChannel(msg.params[1]);
+	std::string name = msg.params[1];
+	if (!chan)
+	{
+    	sendNumeric(client, 403, name, "No such channel");
+    	return;
+	}
+	if (!chan->isMember(client))
+	{
+		sendNumeric(client, 442, name, "You're not on that channel");
+		return ;
+	}
+	if (chan->isInviteOnly())
+	{
+		if (!chan->isOperator(client))
+		{
+			sendNumeric(client, 482, name, "You're not an operator");
+			return ;
+		}
+	}
+	if (chan->isMember(target))
+	{
+		sendNumeric(client, 443, msg.params[0] + " " + name, "is already in channel");
+		return ;
+	}
+	chan->addInvite(msg.params[0]);
+	sendNumeric(client, 341, msg.params[0] + " " + name, "");
+	sendTo(target, ":" + client->getPrefix() + " INVITE " + msg.params[0] + " :" + name);
+}
+
+void Server::handleTopic(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 1)
+	{
+		sendNumeric(client, 461,"TOPIC", "Not enough parameters");
+		return ;
+	}
+	Channel *chan = findChannel(msg.params[0]);
+	std::string name = msg.params[0];
+	if (!chan)
+	{
+		sendNumeric(client, 403, name, "No such channel");
+    	return;
+	}
+	if (!chan->isMember(client))
+	{
+		sendNumeric(client, 442, name, "You're not on that channel");
+		return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		if (chan->getTopic().empty())
+			sendNumeric(client, 331, name, "No topic is set");
+		else
+			sendNumeric(client, 332, name, chan->getTopic());
+		return ;
+	}
+	if (chan->isTopicRestricted())
+	{
+		if (!chan->isOperator(client))
+		{
+			sendNumeric(client, 482, name, "You're not an operator");
+			return ;
+		}
+	}
+	chan->setTopic(msg.params[1]);
+	broadcast(chan, ":" + client->getPrefix() + " TOPIC " + name + " :" + msg.params[1], NULL);
+}
+
 void Server::handleMessage(Client *client, const Message &msg)
 {
-	if (msg.command == "PASS")
+	if (msg.command.empty())
+		return ;
+	else if (msg.command == "PASS")
         handlePass(client, msg);
     else if (msg.command == "NICK")
         handleNick(client, msg);
@@ -290,6 +443,16 @@ void Server::handleMessage(Client *client, const Message &msg)
 		handlePart(client, msg);
 	else if (msg.command == "QUIT")
 		handleQuit(client, msg);
+	else if (msg.command == "PING")
+		handlePing(client, msg);
+	else if (msg.command == "PONG")
+		handlePong(client, msg);
+	else if (msg.command == "KICK")
+		handleKick(client, msg);
+	else if (msg.command == "INVITE")
+		handleInvite(client, msg);
+	else if (msg.command == "TOPIC")
+		handleTopic(client, msg);
     else
-        sendTo(client,  "unknown command: " + msg.command);
+        sendNumeric(client,  421, msg.command, "Unknown command");
 }

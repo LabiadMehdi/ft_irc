@@ -25,6 +25,7 @@ class Channel
 		const std::string &getName() const;
 		const std::string &getTopic() const;
 		void setTopic(const std::string &topic);
+		bool isTopicRestricted() const;
 
 		void addMember(Client *c);
 		void removeMember(Client *c);
@@ -34,6 +35,7 @@ class Channel
 		void addOperator(Client *c);
 		void removeOperator(Client *c);
 		bool isOperator(Client *c) const;
+		void addInvite(const std::string &nick);
 
 		bool isInviteOnly() const;
 		bool isInvited(const std::string &name) const;
@@ -41,7 +43,6 @@ class Channel
 		bool hasLimit() const;
 		const std::string &getKey() const;
 		int getLimit() const;
-
 
 		const std::set<Client*> &getMembers() const;
 };

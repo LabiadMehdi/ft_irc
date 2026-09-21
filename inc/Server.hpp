@@ -46,6 +46,11 @@ class Server
 		void	handlePrivmsg(Client *client, const Message &msg);
 		void	handlePart(Client *client, const Message &msg);
 		void 	handleQuit(Client *client, const Message &msg);
+		void 	handlePing(Client *client, const Message &msg);
+		void 	handlePong(Client *client, const Message &msg);
+		void	handleKick(Client *client, const Message &msg);
+		void	handleInvite(Client *client, const Message &msg);
+		void	handleTopic(Client *client, const Message &msg);
 	public:
 		Server(int port, const std::string &password);
 		~Server();

@@ -88,3 +88,13 @@ int Channel::getLimit() const
 {
 	return _user_limit;
 }
+
+void Channel::addInvite(const std::string &nick)
+{
+	_invited.insert(nick);
+}
+
+bool Channel::isTopicRestricted() const
+{
+	return _topic_restricted;
+}
