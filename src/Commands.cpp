@@ -463,6 +463,7 @@ void Server::handleMode(Client *client, const Message &msg)
 	
 	std::string modes = msg.params[1];
 	char sign = '+';
+	size_t paramIndex = 2;
 	for (size_t i = 0; i < modes.size(); i++)
 	{
 		char c = modes[i];
@@ -481,6 +482,17 @@ void Server::handleMode(Client *client, const Message &msg)
 				break ;
 			default:
 				std::cerr << "mode not handled yet: " << sign << c << std::endl;
+				break ;
+			case 'k':
+				if (sign == '+')
+				{
+					if (paramIndex >= msg.params.size())
+						break ;
+					chan->setKey(msg.params[paramIndex]);
+					paramIndex++;
+				}
+				else
+					chan->setKey("");
 				break ;
 		}
 	}
