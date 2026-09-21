@@ -51,6 +51,7 @@ class Server
 		void	handleKick(Client *client, const Message &msg);
 		void	handleInvite(Client *client, const Message &msg);
 		void	handleTopic(Client *client, const Message &msg);
+		void	handleMode(Client *client, const Message &msg);
 	public:
 		Server(int port, const std::string &password);
 		~Server();

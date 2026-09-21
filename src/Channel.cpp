@@ -98,3 +98,13 @@ bool Channel::isTopicRestricted() const
 {
 	return _topic_restricted;
 }
+
+void Channel::setInviteOnly(bool b)
+{
+	_inv_only = b;
+}
+
+void Channel::setTopicRestricted(bool b)
+{
+	_topic_restricted = b;
+}

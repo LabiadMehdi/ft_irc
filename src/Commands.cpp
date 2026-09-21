@@ -3,6 +3,7 @@
 #include "Utils.hpp"
 #include <cctype>
 #include "Channel.hpp"
+#include <iostream>
 
 void Server::checkRegistration(Client *client)
 {
@@ -425,6 +426,66 @@ void Server::handleTopic(Client *client, const Message &msg)
 	broadcast(chan, ":" + client->getPrefix() + " TOPIC " + name + " :" + msg.params[1], NULL);
 }
 
+void Server::handleMode(Client *client, const Message &msg)
+{
+	if (!client->isRegistered())
+	{
+		sendNumeric(client, 451, "You have not registered");
+		return ;
+	}
+	if (msg.params.size() < 1)
+	{
+		sendNumeric(client, 461,"MODE", "Not enough parameters");
+		return ;
+	}
+	std::string name = msg.params[0];
+	Channel *chan = findChannel(name);
+	if (!chan)
+	{
+		sendNumeric(client, 403, name, "No such channel");
+		return ;
+	}
+	if (msg.params.size() == 1)
+	{
+		sendNumeric(client, 324, name + " +", "");
+		return ;
+	}
+	if (!chan->isMember(client))
+	{
+		sendNumeric(client, 442, name, "You're not on that channel");
+		return ;
+	}
+	if (!chan->isOperator(client))
+	{
+		sendNumeric(client, 482, name, "You're not channel operator");
+		return ;
+	}
+	
+	std::string modes = msg.params[1];
+	char sign = '+';
+	for (size_t i = 0; i < modes.size(); i++)
+	{
+		char c = modes[i];
+		if (c == '+' || c == '-')
+		{
+			sign = c;
+			continue ;
+		}
+		switch (c)
+		{
+			case 'i':
+				chan->setInviteOnly(sign == '+');
+				break ;
+			case 't':
+				chan->setTopicRestricted(sign == '+');
+				break ;
+			default:
+				std::cerr << "mode not handled yet: " << sign << c << std::endl;
+				break ;
+		}
+	}
+}
+
 void Server::handleMessage(Client *client, const Message &msg)
 {
 	if (msg.command.empty())
@@ -453,6 +514,8 @@ void Server::handleMessage(Client *client, const Message &msg)
 		handleInvite(client, msg);
 	else if (msg.command == "TOPIC")
 		handleTopic(client, msg);
+	else if (msg.command == "MODE")
+		handleMode(client, msg);
     else
         sendNumeric(client,  421, msg.command, "Unknown command");
 }
