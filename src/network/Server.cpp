@@ -7,10 +7,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include "Client.hpp"
 #include "Reader.hpp"
-#include <iomanip>
-#include <sstream>
 #include "Channel.hpp"
 
 Server::Server(int port, const std::string &password) : _port(port), _password(password), _listening_fd(-1)
@@ -36,6 +35,8 @@ void	Server::setup()
 		throw std::runtime_error(std::string("bind() failed") + std::strerror(errno));
 	if (listen(_listening_fd, SOMAXCONN) == -1)
 		throw std::runtime_error(std::string("listen() failed") + std::strerror(errno));
+	if (fcntl(_listening_fd, F_SETFL, O_NONBLOCK) == -1)
+		throw std::runtime_error(std::string("fcntl() failed") + std::strerror(errno));
 
 	struct pollfd pfd;
 	pfd.fd = _listening_fd;
@@ -61,6 +62,9 @@ Server::~Server()
 
 void Server::markForRemoval(int fd)
 {
+    for (size_t i = 0; i < _toRemove.size(); i++)
+        if (_toRemove[i] == fd)
+            return ;
     _toRemove.push_back(fd);
 }
 
@@ -113,52 +117,13 @@ void Server::cleanupClients()
 	_toRemove.clear();
 }
 
-void Server::sendNumeric(Client *client, int code, const std::string &text)
-{
-	sendNumeric(client, code, "", text);
-}
-
-void Server::sendTo(Client *client, const std::string &msg)
-{
-	std::string line = msg + "\r\n";
-	send(client->getFd(), line.c_str(), line.size(), 0);
-}
-
-void Server::sendNumeric(Client *client, int code, const std::string &params, const std::string &text)
-{
-	std::string str = ":ircserv ";
-	std::ostringstream oss;
-	oss << std::setw(3) << std::setfill('0') << code;
-	std::string codeStr = oss.str();
-	str += codeStr;
-	str += ' ';
-	str += (client->getNick().empty() ? "*" : client->getNick());
-	if (!params.empty())
-	{
-		str += " ";
-		str += params;
-	}
-	str += " :";
-	str += text;
-	sendTo(client, str);
-}
-
-void Server::broadcastQuit(Client *client, const std::string &reason)
-{
-    std::string line = ":" + client->getPrefix() + " QUIT :" + reason;
-    std::map<std::string, Channel*>::iterator it;
-    for (it = _channels.begin(); it != _channels.end(); ++it)
-    {
-        if (it->second->isMember(client))
-            broadcast(it->second, line, client);
-    }
-}
+static const size_t MAX_INPUT_LINE = 512;
 
 void	Server::readFromClient(int fd)
 {
 	char buf[512];
 	ssize_t n = recv(fd, buf, sizeof(buf), 0);
-	
+
 	if (n <= 0)
 	{
 		broadcastQuit(_clients[fd], "Connection closed");
@@ -170,15 +135,10 @@ void	Server::readFromClient(int fd)
 	std::vector<Message> msgs = feed(client->getInBuf(), chunk);
 	for (size_t i = 0; i < msgs.size(); i++)
 		handleMessage(client, msgs[i]);
-}
-
-void 	Server::broadcast(Channel *chan, const std::string &msg, Client *except)
-{
-	std::set<Client*>::const_iterator it;
-	for (it = chan->getMembers().begin(); it != chan->getMembers().end(); ++it)
+	if (client->getInBuf().size() > MAX_INPUT_LINE)
 	{
-		if (*it != except)
-			sendTo(*it, msg);
+		broadcastQuit(client, "Excess Flood");
+		markForRemoval(fd);
 	}
 }
 
@@ -214,6 +174,12 @@ void	Server::acceptClient()
 	if (fd == -1)
 	{
 		std::cerr << "accept() failed" << std::endl;
+		return ;
+	}
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+	{
+		std::cerr << "fcntl() failed" << std::endl;
+		close(fd);
 		return ;
 	}
 

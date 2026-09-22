@@ -37,6 +37,9 @@ class Server
 		void	sendNumeric(Client *client, int code, const std::string &params, const std::string &text);
 		Client *findByNick(const std::string &nick);
 		void	checkRegistration(Client *client);
+		bool	requireRegistered(Client *client);
+		Channel	*requireChannel(Client *client, const std::string &name);
+		bool	requireMember(Client *client, Channel *chan, const std::string &name);
 
 		void	handlePass(Client *client, const Message &msg);
 		void	handleNick(Client *client, const Message &msg);
