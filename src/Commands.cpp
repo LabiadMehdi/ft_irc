@@ -85,7 +85,31 @@ void Server::handleNick(Client *client, const Message &msg)
 		sendNumeric(client, 433, msg.params[0], "Nickname is already in use");
 		return ;
 	}
-	client->setNick(msg.params[0]);
+	std::string newNick = msg.params[0];
+
+	if (client->isRegistered())
+	{
+		std::string line = ":" + client->getPrefix() + " NICK :" + newNick;
+
+		std::set<Client*> recipients;
+		recipients.insert(client);
+		std::map<std::string, Channel*>::iterator it;
+		for (it = _channels.begin(); it != _channels.end(); ++it)
+		{
+			if (it->second->isMember(client))
+			{
+				const std::set<Client*> &members = it->second->getMembers();
+				recipients.insert(members.begin(), members.end());
+			}
+		}
+
+		std::set<Client*>::iterator r;
+		for (r = recipients.begin(); r != recipients.end(); ++r)
+			sendTo(*r, line);
+	}
+
+	client->setNick(newNick);
+	checkRegistration(client);
 	checkRegistration(client);
 }
 
@@ -270,13 +294,7 @@ void Server::handlePart(Client *client, const Message &msg)
 void Server::handleQuit(Client *client, const Message &msg)
 {
 	std::string reason = (msg.params.size() > 0) ? msg.params[0] : "Client quit";
-	std::string line = ":" + client->getPrefix() + " QUIT :" + reason;
-	std::map<std::string, Channel*>::iterator it;
-	for (it = _channels.begin(); it != _channels.end(); ++it)
-	{
-		if (it->second->isMember(client))
-			broadcast(it->second, line, client);
-	}
+	broadcastQuit(client, reason);
 	markForRemoval(client->getFd());
 }
 

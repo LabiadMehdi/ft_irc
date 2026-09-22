@@ -6,6 +6,7 @@
 #include <vector>
 #include <poll.h>
 #include "Message.hpp"
+#include <csignal>
 
 class Client;
 class Channel;
@@ -52,6 +53,7 @@ class Server
 		void	handleInvite(Client *client, const Message &msg);
 		void	handleTopic(Client *client, const Message &msg);
 		void	handleMode(Client *client, const Message &msg);
+		void	broadcastQuit(Client *client, const std::string &reason);
 	public:
 		Server(int port, const std::string &password);
 		~Server();
@@ -59,5 +61,7 @@ class Server
 		void	setup();
 		void	run();
 };
+
+extern volatile sig_atomic_t g_stop;
 
 #endif

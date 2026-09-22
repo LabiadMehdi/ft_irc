@@ -46,6 +46,15 @@ void	Server::setup()
 
 Server::~Server()
 {
+	std::map<std::string, Channel*>::iterator it;
+	for (it = _channels.begin(); it != _channels.end(); ++it)
+		delete it->second;
+	std::map<int, Client*>::iterator cit;
+	for (cit = _clients.begin(); cit != _clients.end(); ++cit)
+	{
+		close(cit->first);
+		delete cit->second;
+	}
 	if (_listening_fd != -1)
 		close(_listening_fd);
 }
@@ -63,7 +72,13 @@ void Server::removeFromAllChannels(Client *client)
         Channel *chan = it->second;
         chan->removeMember(client);
         chan->removeOperator(client);
-        ++it;
+		if (chan->isEmpty())
+		{
+			delete chan;
+			_channels.erase(it++);
+		}
+		else
+        	++it;
     }
 }
 
@@ -128,6 +143,17 @@ void Server::sendNumeric(Client *client, int code, const std::string &params, co
 	sendTo(client, str);
 }
 
+void Server::broadcastQuit(Client *client, const std::string &reason)
+{
+    std::string line = ":" + client->getPrefix() + " QUIT :" + reason;
+    std::map<std::string, Channel*>::iterator it;
+    for (it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if (it->second->isMember(client))
+            broadcast(it->second, line, client);
+    }
+}
+
 void	Server::readFromClient(int fd)
 {
 	char buf[512];
@@ -135,8 +161,9 @@ void	Server::readFromClient(int fd)
 	
 	if (n <= 0)
 	{
+		broadcastQuit(_clients[fd], "Connection closed");
 		markForRemoval(fd);
-		return ;
+		return;
 	}
 	std::string chunk(buf, n);
 	Client *client = _clients[fd];
@@ -157,14 +184,16 @@ void 	Server::broadcast(Channel *chan, const std::string &msg, Client *except)
 
 void	Server::run()
 {
-	while (true)
+	while (!g_stop)
 	{
 		if (poll(&_pollfds[0], _pollfds.size(), -1) == -1)
+		{
+			if (g_stop)
+				break;
 			throw std::runtime_error("pollfd() failed");
-		
-		if (_pollfds[0].revents & POLLIN)
+		}
+		if (_pollfds[0].revents & (POLLIN | POLLHUP | POLLERR))
 			acceptClient();
-
 		for (size_t i = 1; i < _pollfds.size(); i++)
 		{
 			if (_pollfds[i].revents & POLLIN)
