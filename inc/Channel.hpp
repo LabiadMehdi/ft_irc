@@ -43,7 +43,11 @@ class Channel
 		void setInviteOnly(bool b);
 		void setTopicRestricted(bool b);
 		void setKey(const std::string &key);
+		void setLimit(int limit);
 		const std::set<Client*> &getMembers() const;
+		void clearLimit();
+		std::string getModeString() const;
+		std::string getNamesList() const;
 };
 
 #endif

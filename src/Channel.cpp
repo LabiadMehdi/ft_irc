@@ -1,4 +1,6 @@
 #include "Channel.hpp"
+#include "Utils.hpp"
+#include "Client.hpp"
 
 Channel::Channel(const std::string &name) : _name(name), _inv_only(false), _topic_restricted(false), _user_limit(0), _has_limit(false)
 {	
@@ -112,4 +114,44 @@ void Channel::setTopicRestricted(bool b)
 void Channel::setKey(const std::string &key)
 {
 	_key = key;
+}
+
+void Channel::setLimit(int limit)
+{
+	_user_limit = limit;
+	_has_limit = true;
+}
+
+void Channel::clearLimit()
+{
+	_user_limit = 0;
+	_has_limit = false;
+}
+
+std::string Channel::getModeString() const
+{
+    std::string str = "+";
+    if (_inv_only)          str += "i";
+    if (_topic_restricted)  str += "t";
+    if (hasKey())           str += "k";
+    if (_has_limit)         str += "l";
+
+    if (hasKey())           str += " " + _key;
+    if (_has_limit)         str += " " + toString(_user_limit);
+    return str;
+}
+
+std::string Channel::getNamesList() const
+{
+	std::string list = "";
+	std::set<Client *>::const_iterator it;
+	for (it = _members.begin(); it != _members.end(); ++it)
+	{
+		if (!list.empty())
+			list += " ";
+		if (isOperator(*it))
+			list += "@";
+		list += (*it)->getNick();
+	}
+	return list;
 }
