@@ -92,7 +92,7 @@ void Server::handlePart(Client *client, const Message &msg)
 	chan->removeOperator(client);
 	if (chan->isEmpty())
 	{
-		_channels.erase(name);
+		_channels.erase(chan->getName());
 		delete chan;
 	}
 }
@@ -130,7 +130,7 @@ void Server::handleKick(Client *client, const Message &msg)
 	chan->removeOperator(toKick);
 	if (chan->isEmpty())
 	{
-		_channels.erase(name);
+		_channels.erase(chan->getName());
 		delete chan;
 	}
 }

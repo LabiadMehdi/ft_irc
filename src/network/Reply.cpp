@@ -70,10 +70,13 @@ Client *Server::findByNick(const std::string &nick)
 
 Channel *Server::findChannel(const std::string &name)
 {
-	std::map<std::string, Channel*>::iterator it = _channels.find(name);
-	if (it  == _channels.end())
-		return NULL;
-	return it->second;
+	std::map<std::string, Channel*>::iterator it;
+	for (it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		if (toUpper(it->first) == toUpper(name))
+			return it->second;
+	}
+	return NULL;
 }
 
 bool Server::requireRegistered(Client *client)
